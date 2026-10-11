@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificat d'arrêt de travail</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Georgia', 'Times New Roman', serif; background: #f0f0f0; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+
+    .certificate {
+      width: 148mm; height: 210mm; background: #fdfcfa;
+      padding: 12mm 12mm 10mm 12mm; position: relative;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); border-radius: 4px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .header { flex-shrink: 0; margin-bottom: 8px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .header-left { text-align: left; line-height: 1.3; }
+    .header-right { text-align: right; font-size: 11px; color: #2c3e50; font-style: italic; padding-top: 5px; }
+    .doctor-name { font-size: 15px; font-weight: 700; color: #2c3e50; letter-spacing: 0.5px; }
+    .doctor-title { font-size: 11px; color: #2c3e50; margin-top: 1px; font-style: italic; letter-spacing: 1px; }
+    .doctor-info-line { font-size: 9px; color: #2c3e50; margin-top: 1px; }
+    .header-separator { border-bottom: 1.5px solid #2c3e50; margin: 8px 0 0 0; }
+
+    .certificate-title { text-align: center; margin: 15px 0 20px 0; flex-shrink: 0; }
+    .certificate-title span {
+      font-size: 16px; font-weight: 700; color: #2c3e50; letter-spacing: 3px;
+      text-transform: uppercase; font-style: italic;
+      border-bottom: 1.5px solid #2c3e50; padding-bottom: 4px; display: inline-block;
+    }
+
+    .certificate-body { font-size: 12px; line-height: 1.9; color: #2c3e50; padding: 0 5px; font-style: italic; flex-shrink: 0; }
+    .certificate-body p { margin-bottom: 8px; }
+    .fill-line { display: inline-block; min-width: 180px; padding: 0 5px; font-style: normal; font-weight: 600; }
+    .fill-line.short { min-width: 80px; }
+    .fill-line.long { min-width: 220px; }
+
+    .arret-block { margin: 15px 0 10px 0; padding: 0 8px; font-size: 12px; line-height: 2; color: #2c3e50; font-style: italic; flex-shrink: 0; }
+    .arret-block .fill-line { min-width: 80px; padding: 0 5px; font-style: normal; font-weight: 600; text-align: center; }
+    .arret-block .fill-line.long { min-width: 180px; text-align: left; }
+
+    .spacer { flex-grow: 1; }
+    .bottom-line { flex-shrink: 0; padding-top: 10px; border-top: 1.5px solid #2c3e50; text-align: center; font-size: 11px; color: #2c3e50; font-weight: 700; font-style: italic; letter-spacing: 0.5px; }
+
+    .print-btn, .back-btn {
+      position: fixed; right: 20px; color: white; border: none;
+      padding: 12px 24px; border-radius: 40px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease; z-index: 1000;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .print-btn { bottom: 20px; background: #2c3e50; box-shadow: 0 4px 15px rgba(44,62,80,0.4); }
+    .print-btn:hover { background: #1a252f; transform: translateY(-2px); }
+    .back-btn { bottom: 80px; background: #6c757d; box-shadow: 0 4px 15px rgba(108,117,125,0.4); }
+    .back-btn:hover { background: #5a6268; transform: translateY(-2px); }
+
+    @page { size: A5; margin: 0; }
+    @media print {
+      html, body { background: white; padding: 0; margin: 0; width: 148mm; height: 210mm; }
+      .print-btn, .back-btn { display: none; }
+      .certificate {
+        box-shadow: none; padding: 12mm 12mm 10mm 12mm; margin: 0;
+        width: 148mm; height: 210mm; border-radius: 0; background: white;
+        page-break-after: avoid; page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="back-btn" onclick="window.location.href='arret-de-travail.html'">← Retour</button>
+  <button class="print-btn" onclick="window.print()">🖨 Imprimer le certificat</button>
+
+  <div class="certificate" id="content">
+    <div class="text-center p-12">Chargement…</div>
+  </div>
+
+  <script type="module">
+    import { doctor } from './assets/js/doctor.js';
+    import { escapeHtml, formatDateFR } from './assets/js/helpers.js';
+
+    const raw = localStorage.getItem('certificate_data');
+    if (!raw) {
+      location.href = 'arret-de-travail.html';
+      throw new Error('no data');
+    }
+    const data = JSON.parse(raw);
+
+    const genderText = data.gender === 'M' ? 'Masculin' : data.gender === 'F' ? 'Féminin' : 'Non précisé';
+    const hasArretInitial = !!(data.days && data.start_date && data.end_date);
+    const hasProlongation = !!(data.prolongation_days && data.prolongation_start && data.prolongation_end);
+
+    document.getElementById('content').innerHTML = `
+      <div class="header">
+        <div class="header-top">
+          <div class="header-left">
+            <div class="doctor-name">${escapeHtml(doctor.name)}</div>
+            <div class="doctor-title">${escapeHtml(doctor.title)}</div>
+            <div class="doctor-info-line">${escapeHtml(doctor.address)}</div>
+            <div class="doctor-info-line">Tél : ${escapeHtml(doctor.phone)}</div>
+            <div class="doctor-info-line">Fix : ${escapeHtml(doctor.fix)}</div>
+            <div class="doctor-info-line">${escapeHtml(doctor.registry)}</div>
+          </div>
+          <div class="header-right">Annaba le : ${escapeHtml(formatDateFR(data.certificate_date))}</div>
+        </div>
+        <div class="header-separator"></div>
+      </div>
+
+      <div class="certificate-title"><span>Certificat d'arrêt de travail</span></div>
+
+      <div class="certificate-body">
+        <p>Je soussigné Docteur Zeghib Houria Médecin Psychiatre, certifie que l'état de santé</p>
+        <p>De Mr / Mme : <span class="fill-line long">${escapeHtml(data.first_name + ' ' + data.last_name)}</span></p>
+        <p>Âge : <span class="fill-line short">${escapeHtml(data.age)} ans</span>
+           &nbsp; Sexe : <span class="fill-line short">${escapeHtml(genderText)}</span></p>
+        <p>Profession : <span class="fill-line long">${escapeHtml(data.profession || '')}</span></p>
+        <p>Adresse : <span class="fill-line long">${escapeHtml(data.address || '')}</span></p>
+      </div>
+
+      ${hasArretInitial ? `
+        <div class="arret-block">
+          <p>Nécessite un arrêt de travail de <span class="fill-line">${escapeHtml(data.days)}</span> jours. Sauf complications.</p>
+          <p>Du <span class="fill-line long">${escapeHtml(formatDateFR(data.start_date))}</span>
+             Au <span class="fill-line long">${escapeHtml(formatDateFR(data.end_date))}</span></p>
+        </div>` : ''}
+
+      ${hasProlongation ? `
+        <div class="arret-block">
+          <p>Nécessite une prolongation d'arrêt de travail de <span class="fill-line">${escapeHtml(data.prolongation_days)}</span> jours. Sauf complications.</p>
+          <p>Du <span class="fill-line long">${escapeHtml(formatDateFR(data.prolongation_start))}</span>
+             Au <span class="fill-line long">${escapeHtml(formatDateFR(data.prolongation_end))}</span></p>
+        </div>` : ''}
+
+      <div class="spacer"></div>
+      <div class="bottom-line">Certificat fait pour faire valoir ce que de droit</div>
+    `;
+
+    localStorage.removeItem('certificate_data');
+  </script>
+</body>
+</html>

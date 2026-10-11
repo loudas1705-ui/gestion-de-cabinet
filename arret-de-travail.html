@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arrêt de travail — Cabinet Psychiatrique</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+  <div id="layout"></div>
+  <main class="ml-72 min-h-screen">
+    <div id="topbar"></div>
+    <div class="p-8">
+
+      <div id="messages"></div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+          <h3 class="font-bold text-gray-800 flex items-center">
+            <i class="fas fa-file-medical mr-2 text-blue-600"></i> Certificat d'arrêt de travail
+          </h3>
+        </div>
+        <div class="p-6">
+          <form id="arretForm" class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Patient *</label>
+              <select id="patientSelect" required class="form-select">
+                <option value="">Sélectionner un patient</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Prénom *</label>
+                <input type="text" id="firstName" required readonly class="form-input">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
+                <input type="text" id="lastName" required readonly class="form-input">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Âge *</label>
+                <input type="number" id="age" required min="1" max="120" class="form-input">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sexe *</label>
+                <select id="genderSelect" required class="form-select">
+                  <option value="">Sélectionner</option>
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Profession *</label>
+                <input type="text" id="profession" required class="form-input">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
+                <input type="text" id="address" required class="form-input">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+                <input type="date" id="startDate" class="form-input">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de jours</label>
+                <input type="number" id="days" min="1" class="form-input">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de fin (auto)</label>
+                <input type="date" id="endDate" readonly class="form-input bg-gray-50">
+              </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-5 mt-5">
+              <h4 class="font-medium text-gray-700 mb-4 flex items-center">
+                <i class="fas fa-clock mr-2 text-amber-500"></i> Prolongation (optionnel)
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+                  <input type="date" id="prolongationStart" class="form-input">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de jours</label>
+                  <input type="number" id="prolongationDays" min="1" class="form-input">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Date de fin (auto)</label>
+                  <input type="date" id="prolongationEnd" readonly class="form-input bg-gray-50">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-file-pdf mr-2"></i> Générer le certificat
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './assets/js/auth.js';
+    import { renderLayout } from './assets/js/layout.js';
+    import { listPatients } from './assets/js/db.js';
+    import { calcAge, escapeHtml, fullName, showMessage } from './assets/js/helpers.js';
+
+    let patientsCache = [];
+
+    (async () => {
+      await requireAuth();
+      renderLayout('arret-de-travail.html');
+      await loadPatients();
+    })();
+
+    async function loadPatients() {
+      patientsCache = await listPatients();
+      const sel = document.getElementById('patientSelect');
+      sel.innerHTML = '<option value="">Sélectionner un patient</option>' +
+        patientsCache.map(p => `<option value="${p.id}">${escapeHtml(fullName(p))}</option>`).join('');
+    }
+
+    document.getElementById('patientSelect').addEventListener('change', function () {
+      const p = patientsCache.find(x => x.id === this.value);
+      if (!p) {
+        ['firstName','lastName','age','address','profession'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('genderSelect').value = '';
+        return;
+      }
+      document.getElementById('firstName').value = p.first_name || '';
+      document.getElementById('lastName').value = p.last_name || '';
+      document.getElementById('address').value = p.address || '';
+      document.getElementById('genderSelect').value = p.gender || '';
+      document.getElementById('age').value = calcAge(p.date_of_birth);
+    });
+
+    function calcEnd(startId, daysId, endId) {
+      const start = document.getElementById(startId).value;
+      const days = parseInt(document.getElementById(daysId).value, 10) || 0;
+      if (start && days > 0) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + days - 1);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        document.getElementById(endId).value = `${y}-${m}-${day}`;
+      } else {
+        document.getElementById(endId).value = '';
+      }
+    }
+
+    ['startDate','days'].forEach(id => document.getElementById(id).addEventListener('input', () => calcEnd('startDate','days','endDate')));
+    ['prolongationStart','prolongationDays'].forEach(id => document.getElementById(id).addEventListener('input', () => calcEnd('prolongationStart','prolongationDays','prolongationEnd')));
+
+    function localDateISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    document.getElementById('arretForm').addEventListener('submit', e => {
+      e.preventDefault();
+
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const days = document.getElementById('days').value;
+      const proStart = document.getElementById('prolongationStart').value;
+      const proEnd = document.getElementById('prolongationEnd').value;
+      const proDays = document.getElementById('prolongationDays').value;
+
+      if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+        showMessage('messages', 'La date de début doit être antérieure à la date de fin', 'error');
+        return;
+      }
+      if (proStart && proEnd && new Date(proStart) > new Date(proEnd)) {
+        showMessage('messages', 'La date de début de prolongation doit être antérieure à la date de fin', 'error');
+        return;
+      }
+
+      const data = {
+        patient_id: document.getElementById('patientSelect').value,
+        first_name: document.getElementById('firstName').value,
+        last_name: document.getElementById('lastName').value,
+        age: document.getElementById('age').value,
+        gender: document.getElementById('genderSelect').value,
+        profession: document.getElementById('profession').value,
+        address: document.getElementById('address').value,
+        start_date: startDate,
+        end_date: endDate,
+        days: days,
+        prolongation_days: proDays || null,
+        prolongation_start: proStart || null,
+        prolongation_end: proEnd || null,
+        certificate_date: localDateISO()
+      };
+
+      localStorage.setItem('certificate_data', JSON.stringify(data));
+      window.location.href = 'arret-de-travail-print.html';
+    });
+  </script>
+</body>
+</html>

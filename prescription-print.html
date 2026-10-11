@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ordonnance</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body { font-family: 'Georgia', 'Times New Roman', serif; background: #eeeeee; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+
+    .prescription {
+      width: 148mm; height: 210mm; background: #fdfcfa;
+      padding: 12mm 12mm 10mm 12mm; position: relative;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 4px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .header { flex-shrink: 0; margin-bottom: 8px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .header-left { text-align: left; line-height: 1.3; }
+    .header-right { text-align: right; font-size: 11px; color: #2c3e50; font-style: italic; padding-top: 5px; white-space: nowrap; }
+    .doctor-name { font-size: 15px; font-weight: 700; color: #2c3e50; letter-spacing: 0.5px; }
+    .doctor-title { font-size: 11px; color: #2c3e50; margin-top: 1px; font-style: italic; letter-spacing: 1px; }
+    .doctor-info-line { font-size: 9px; color: #2c3e50; margin-top: 1px; }
+    .header-separator { border-bottom: 1.5px solid #2c3e50; margin-top: 8px; }
+
+    .prescription-title { text-align: center; margin: 15px 0 20px 0; flex-shrink: 0; }
+    .prescription-title span {
+      font-size: 18px; font-weight: 700; color: #2c3e50; letter-spacing: 3px;
+      text-transform: uppercase; font-style: italic;
+      border-bottom: 1.5px solid #2c3e50; padding-bottom: 4px; display: inline-block;
+    }
+
+    .patient-section { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-shrink: 0; }
+    .patient-info { font-size: 11px; color: #2c3e50; font-style: italic; padding: 0 5px; margin-bottom: 10px; flex: 1; }
+    .patient-info p { margin-bottom: 4px; }
+    .patient-info .fill-line { display: inline-block; min-width: 180px; padding: 0 5px; font-style: normal; font-weight: 600; }
+    .patient-info .fill-line.short { min-width: 80px; }
+    .patient-info .fill-line.long { min-width: 220px; }
+    .prescription-number { font-size: 13px; font-weight: 700; color: #2c3e50; font-style: italic; letter-spacing: 1px; padding: 5px 8px 0 0; white-space: nowrap; }
+
+    .med-table { width: 100%; border-collapse: collapse; margin: 4px 0 8px 0; flex-shrink: 0; }
+    .med-table th { text-align: left; font-size: 10px; font-weight: 700; color: #2c3e50; padding: 4px 5px; border-bottom: 1.5px solid #2c3e50; text-transform: uppercase; letter-spacing: 0.5px; font-style: italic; }
+    .med-table td { padding: 5px; border-bottom: 1px dotted #cbd5e1; font-size: 11px; vertical-align: top; color: #2c3e50; }
+    .med-name { font-weight: 700; }
+
+    .instructions { margin: 6px 0 5px 0; padding: 6px 10px; font-size: 10.5px; color: #2c3e50; line-height: 1.4; flex-shrink: 0; max-height: 60px; overflow: hidden; }
+    .instructions-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; font-style: italic; }
+
+    .spacer { flex-grow: 1; }
+    .footer-section { flex-shrink: 0; padding-top: 8px; border-top: 1.5px solid #2c3e50; }
+    .footer-text { text-align: center; font-size: 9px; color: #2c3e50; margin-top: 6px; font-style: italic; font-weight: 600; }
+
+    .print-btn, .back-btn {
+      position: fixed; right: 20px; color: white; border: none;
+      padding: 12px 24px; border-radius: 40px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease; z-index: 1000;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .print-btn { bottom: 20px; background: #2c3e50; box-shadow: 0 4px 15px rgba(44,62,80,0.4); }
+    .print-btn:hover { background: #1a252f; transform: translateY(-2px); }
+    .back-btn { bottom: 80px; background: #6c757d; box-shadow: 0 4px 15px rgba(108,117,125,0.4); }
+    .back-btn:hover { background: #5a6268; transform: translateY(-2px); }
+
+    @page { size: A5 portrait; margin: 0; }
+    @media print {
+      html, body { width: 148mm !important; height: 210mm !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: white !important; display: block !important; }
+      body { position: relative !important; }
+      .print-btn, .back-btn { display: none !important; }
+      .prescription {
+        position: relative !important; top: 0 !important; left: 0 !important;
+        width: 148mm !important; height: 210mm !important;
+        margin: 0 !important; padding: 12mm 12mm 10mm 12mm !important;
+        box-shadow: none !important; border-radius: 0 !important; background: white !important;
+        display: flex !important; flex-direction: column !important; overflow: hidden !important;
+        page-break-before: avoid !important; page-break-after: avoid !important;
+        page-break-inside: avoid !important; break-inside: avoid !important;
+      }
+      .spacer { flex-grow: 1; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Imprimer l'ordonnance</button>
+  <button class="back-btn" onclick="window.location.href='prescriptions.html'">← Retour</button>
+
+  <div class="prescription" id="content">
+    <div class="text-center p-12 text-gray-400">Chargement…</div>
+  </div>
+
+  <script type="module">
+    import { doctor } from './assets/js/doctor.js';
+    import { getPrescription, getPatient } from './assets/js/db.js';
+    import { escapeHtml, calcAge, formatDateFR } from './assets/js/helpers.js';
+
+    const id = new URLSearchParams(location.search).get('id');
+    if (!id) { document.getElementById('content').innerHTML = 'ID invalide'; throw new Error('no id'); }
+
+    async function load() {
+      const p = await getPrescription(id);
+      if (!p) { document.getElementById('content').innerHTML = 'Prescription non trouvée'; return; }
+
+      const patient = await getPatient(p.patient_id);
+      const age = patient ? calcAge(patient.date_of_birth) : '';
+      const genderText = patient?.gender === 'M' ? 'Masculin' : patient?.gender === 'F' ? 'Féminin' : 'Non précisé';
+      const prescDate = formatDateFR(p.prescription_date);
+      const number = 'N° ' + (p.number_label || (p.number ? String(p.number).padStart(3, '0') : '—'));
+      const meds = Array.isArray(p.medications) ? p.medications : [];
+
+      const medRows = meds.map(m => `
+        <tr>
+          <td class="med-name">${escapeHtml(m.name || '')}</td>
+          <td>${escapeHtml(m.dosage || '')}${m.drops ? `<br>${escapeHtml(m.drops)} gouttes` : ''}</td>
+          <td>${escapeHtml(m.frequency || `${m.morning || ''} - ${m.afternoon || ''} - ${m.evening || ''}`)}</td>
+          <td>${escapeHtml(m.duration || '')}</td>
+        </tr>`).join('');
+
+      document.getElementById('content').innerHTML = `
+        <div class="header">
+          <div class="header-top">
+            <div class="header-left">
+              <div class="doctor-name">${escapeHtml(doctor.name)}</div>
+              <div class="doctor-title">${escapeHtml(doctor.title)}</div>
+              <div class="doctor-info-line">${escapeHtml(doctor.address)}</div>
+              <div class="doctor-info-line">Tél : ${escapeHtml(doctor.phone)}</div>
+              <div class="doctor-info-line">Fix : ${escapeHtml(doctor.fix)}</div>
+              <div class="doctor-info-line">${escapeHtml(doctor.registry)}</div>
+            </div>
+            <div class="header-right">Annaba le : ${escapeHtml(prescDate)}</div>
+          </div>
+          <div class="header-separator"></div>
+        </div>
+
+        <div class="patient-section">
+          <div class="patient-info">
+            <p>Nom et Prénom : <span class="fill-line short">${escapeHtml((patient?.last_name || '') + ' ' + (patient?.first_name || ''))}</span>
+              &nbsp; Âge : <span class="fill-line short">${escapeHtml(age)} ans</span></p>
+            <p>Sexe : <span class="fill-line short">${escapeHtml(genderText)}</span>
+              ${p.weight ? ` &nbsp; Poids : <span class="fill-line short">${escapeHtml(p.weight)} kg</span>` : ''}</p>
+            ${patient?.address ? `<p>Adresse : <span class="fill-line long">${escapeHtml(patient.address)}</span></p>` : ''}
+          </div>
+          <div class="prescription-number">${escapeHtml(number)}</div>
+        </div>
+
+        <div class="prescription-title"><span>Ordonnance</span></div>
+
+        ${meds.length ? `
+          <table class="med-table">
+            <thead><tr><th>Médicament</th><th>Dosage</th><th>Posologie</th><th>Durée</th></tr></thead>
+            <tbody>${medRows}</tbody>
+          </table>` : `<p style="text-align:center; color:#999; font-style:italic; font-size:11px;">Aucun médicament prescrit</p>`}
+
+        ${p.instructions ? `
+          <div class="instructions">
+            <div class="instructions-label">Instructions :</div>
+            <div>${escapeHtml(p.instructions).replace(/\n/g, '<br>')}</div>
+          </div>` : ''}
+
+        <div class="spacer"></div>
+
+        <div class="footer-section">
+          <div class="footer-text">Ordonnance faite pour faire valoir ce que de droit</div>
+        </div>
+      `;
+    }
+
+    load();
+  </script>
+</body>
+</html>

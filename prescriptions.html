@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prescriptions — Cabinet Psychiatrique</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+  <div id="layout"></div>
+  <main class="ml-72 min-h-screen">
+    <div id="topbar"></div>
+    <div class="p-8">
+
+      <div id="messages"></div>
+
+      <div class="mb-6">
+        <button type="button" onclick="openNewPrescriptionModal()" class="btn-primary">
+          <i class="fas fa-plus-circle mr-2"></i> Nouvelle prescription
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
+          <h3 class="font-bold text-gray-800 flex items-center">
+            <i class="fas fa-prescription-bottle mr-2 text-green-600"></i> Liste des prescriptions
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead>
+              <tr><th>Patient</th><th>Date</th><th>Médicaments</th><th>Médecin</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="prescriptionsTableBody">
+              <tr><td colspan="5" class="text-center py-6 text-gray-400">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="prescriptionModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container" style="max-width:900px; max-height:95vh; overflow-y:auto;">
+      <div class="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+        <h3 id="prescriptionModalTitle" class="text-xl font-bold text-gray-800">
+          <i class="fas fa-file-prescription text-green-600 mr-2"></i> Nouvelle prescription
+        </h3>
+        <button type="button" onclick="closePrescriptionModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+
+      <form id="prescriptionForm" class="p-6 space-y-5">
+        <input type="hidden" id="prescriptionId" value="">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Patient *</label>
+          <select id="prescPatientId" required class="form-select w-full">
+            <option value="">Sélectionner un patient</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date de prescription *</label>
+            <input type="date" id="prescriptionDate" required class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Poids (kg)</label>
+            <input type="text" id="prescriptionWeight" placeholder="Ex: 70" class="form-input w-full">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <label class="block text-sm font-semibold text-gray-700">
+              <i class="fas fa-pills text-green-600 mr-2"></i> Médicaments *
+            </label>
+          </div>
+          <div id="medicationsContainer" class="space-y-4"></div>
+          <button type="button" onclick="addMedicationRow()" class="mt-4 text-purple-600 hover:text-purple-700 text-sm font-semibold">
+            <i class="fas fa-plus-circle mr-1"></i> Ajouter un médicament
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Instructions complémentaires</label>
+          <textarea id="prescriptionInstructions" rows="4" class="form-textarea w-full"
+                    placeholder="Précautions, instructions complémentaires..."></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+          <button type="button" onclick="closePrescriptionModal()" class="btn-secondary">Annuler</button>
+          <button type="submit" id="prescriptionSubmitButton" class="btn-primary">
+            <i class="fas fa-save mr-2"></i> Enregistrer la prescription
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth } from './assets/js/auth.js';
+    import { renderLayout } from './assets/js/layout.js';
+    import {
+      listPrescriptions, addPrescription, updatePrescription,
+      deletePrescription, listPatients,
+      nextPrescriptionNumber, formatPrescriptionNumber
+    } from './assets/js/db.js';
+    import { doctor } from './assets/js/doctor.js';
+    import {
+      escapeHtml, escapeAttr, fullName, showMessage, formatDateFR, formatDateInput
+    } from './assets/js/helpers.js';
+
+    let prescriptionsCache = [];
+    let patientsCache = [];
+    let editingId = null;
+
+    (async () => {
+      await requireAuth();
+      renderLayout('prescriptions.html');
+      await Promise.all([loadPatients(), loadPrescriptions()]);
+    })();
+
+    async function loadPatients() {
+      patientsCache = await listPatients();
+      const sel = document.getElementById('prescPatientId');
+      sel.innerHTML = '<option value="">Sélectionner un patient</option>' +
+        patientsCache.map(p => `<option value="${p.id}">${escapeHtml(fullName(p))}</option>`).join('');
+      const params = new URLSearchParams(location.search);
+      const pid = params.get('patient_id');
+      if (pid) sel.value = pid;
+    }
+
+    async function loadPrescriptions() {
+      prescriptionsCache = await listPrescriptions();
+      renderTable();
+    }
+
+    function patientLabel(id) {
+      const p = patientsCache.find(x => x.id === id);
+      return p ? fullName(p) : '—';
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('prescriptionsTableBody');
+      if (!prescriptionsCache.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-12 text-gray-400">
+          <i class="fas fa-prescription text-4xl mb-3 block"></i>Aucune prescription</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = prescriptionsCache.map(p => {
+        const meds = Array.isArray(p.medications) ? p.medications : [];
+        const names = meds.slice(0, 2).map(m => m.name).filter(Boolean);
+        let text = names.join(', ');
+        if (meds.length > 2) text += '...';
+        return `
+          <tr>
+            <td class="font-medium text-gray-800">${escapeHtml(patientLabel(p.patient_id))}</td>
+            <td>${formatDateFR(p.prescription_date)}</td>
+            <td class="max-w-xs"><div class="truncate" title="${escapeHtml(text)}">${escapeHtml(text)}</div></td>
+            <td>${escapeHtml(p.doctor_name || doctor.name_short)}</td>
+            <td>
+              <div class="flex items-center space-x-1">
+                <button onclick="editPrescription('${p.id}')" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50" title="Modifier">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <a href="prescription-print.html?id=${p.id}" class="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50" title="Imprimer">
+                  <i class="fas fa-print"></i>
+                </a>
+                <button onclick="removePrescription('${p.id}')" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50" title="Supprimer">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    function createMedicationRow(med = {}) {
+      const container = document.getElementById('medicationsContainer');
+      const row = document.createElement('div');
+      row.className = 'medication-row border border-gray-200 rounded-xl p-4 bg-gray-50';
+
+      const name = med.name ?? '';
+      const dosage = med.dosage ?? '';
+      const morning = med.morning ?? '1/2';
+      const afternoon = med.afternoon ?? '0';
+      const evening = med.evening ?? '1/2';
+      const duration = med.duration ?? '';
+
+      row.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+          <div class="font-semibold text-gray-700"><i class="fas fa-pills text-green-600 mr-2"></i> Médicament</div>
+          <button type="button" onclick="removeMedicationRow(this)" class="text-red-500 hover:text-red-700 text-sm font-medium">
+            <i class="fas fa-trash-alt mr-1"></i> Supprimer
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Nom du médicament *</label>
+            <input type="text" name="med_name[]" value="${escapeAttr(name)}" required class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Dosage</label>
+            <input type="text" name="med_dosage[]" value="${escapeAttr(dosage)}" placeholder="Ex: 50mg" class="form-input w-full">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1"><i class="fas fa-sun text-orange-500 mr-1"></i> Matin</label>
+            <input type="text" name="med_morning[]" value="${escapeAttr(morning)}" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1"><i class="fas fa-cloud-sun text-yellow-500 mr-1"></i> Midi</label>
+            <input type="text" name="med_afternoon[]" value="${escapeAttr(afternoon)}" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1"><i class="fas fa-moon text-indigo-500 mr-1"></i> Soir</label>
+            <input type="text" name="med_evening[]" value="${escapeAttr(evening)}" class="form-input w-full">
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Durée du traitement</label>
+          <input type="text" name="med_duration[]" value="${escapeAttr(duration)}" placeholder="Ex: 30 jours" class="form-input w-full">
+        </div>`;
+      container.appendChild(row);
+    }
+
+    window.addMedicationRow = function () {
+      createMedicationRow({ name: '', dosage: '', morning: '1/2', afternoon: '0', evening: '1/2', duration: '' });
+    };
+
+    window.removeMedicationRow = function (button) {
+      const container = document.getElementById('medicationsContainer');
+      if (container.querySelectorAll('.medication-row').length <= 1) {
+        alert('Une prescription doit contenir au moins un médicament.');
+        return;
+      }
+      button.closest('.medication-row').remove();
+    };
+
+    window.openNewPrescriptionModal = function () {
+      editingId = null;
+      document.getElementById('prescriptionForm').reset();
+      document.getElementById('prescriptionId').value = '';
+      document.getElementById('prescriptionModalTitle').innerHTML = '<i class="fas fa-file-prescription text-green-600 mr-2"></i> Nouvelle prescription';
+      document.getElementById('prescriptionSubmitButton').innerHTML = '<i class="fas fa-save mr-2"></i> Enregistrer la prescription';
+      document.getElementById('prescriptionDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('prescriptionWeight').value = '';
+      document.getElementById('medicationsContainer').innerHTML = '';
+      addMedicationRow();
+
+      const params = new URLSearchParams(location.search);
+      const pid = params.get('patient_id');
+      if (pid) document.getElementById('prescPatientId').value = pid;
+
+      document.getElementById('prescriptionModal').style.display = 'flex';
+    };
+
+    window.editPrescription = function (id) {
+      const p = prescriptionsCache.find(x => x.id === id);
+      if (!p) return;
+      editingId = id;
+      document.getElementById('prescriptionId').value = id;
+      document.getElementById('prescPatientId').value = p.patient_id;
+      document.getElementById('prescriptionDate').value = formatDateInput(p.prescription_date);
+      document.getElementById('prescriptionWeight').value = p.weight || '';
+      document.getElementById('prescriptionInstructions').value = p.instructions || '';
+      document.getElementById('medicationsContainer').innerHTML = '';
+
+      const meds = Array.isArray(p.medications) ? p.medications : [];
+      if (meds.length) meds.forEach(m => createMedicationRow(m));
+      else addMedicationRow();
+
+      document.getElementById('prescriptionModalTitle').innerHTML = '<i class="fas fa-edit text-blue-600 mr-2"></i> Modifier la prescription';
+      document.getElementById('prescriptionSubmitButton').innerHTML = '<i class="fas fa-save mr-2"></i> Enregistrer les modifications';
+      document.getElementById('prescriptionModal').style.display = 'flex';
+    };
+
+    window.closePrescriptionModal = function () {
+      document.getElementById('prescriptionModal').style.display = 'none';
+    };
+
+    window.removePrescription = async function (id) {
+      if (!confirm('Supprimer définitivement cette prescription ?')) return;
+      await deletePrescription(id);
+      showMessage('messages', 'Prescription supprimée avec succès', 'success');
+      loadPrescriptions();
+    };
+
+    document.getElementById('prescriptionForm').addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const patient_id = document.getElementById('prescPatientId').value;
+      const prescription_date = document.getElementById('prescriptionDate').value;
+      const weight = document.getElementById('prescriptionWeight').value.trim();
+      const instructions = document.getElementById('prescriptionInstructions').value.trim();
+
+      if (!patient_id) { showMessage('messages', 'Veuillez sélectionner un patient.', 'error'); return; }
+      if (!prescription_date) { showMessage('messages', 'Veuillez sélectionner une date.', 'error'); return; }
+
+      const names = [...document.querySelectorAll('input[name="med_name[]"]')].map(i => i.value.trim());
+      const dosages = [...document.querySelectorAll('input[name="med_dosage[]"]')].map(i => i.value.trim());
+      const mornings = [...document.querySelectorAll('input[name="med_morning[]"]')].map(i => i.value.trim());
+      const afternoons = [...document.querySelectorAll('input[name="med_afternoon[]"]')].map(i => i.value.trim());
+      const evenings = [...document.querySelectorAll('input[name="med_evening[]"]')].map(i => i.value.trim());
+      const durations = [...document.querySelectorAll('input[name="med_duration[]"]')].map(i => i.value.trim());
+
+      const medications = [];
+      names.forEach((n, i) => {
+        if (!n) return;
+        medications.push({
+          name: n,
+          dosage: dosages[i] || '',
+          morning: mornings[i] || '',
+          afternoon: afternoons[i] || '',
+          evening: evenings[i] || '',
+          duration: durations[i] || '',
+          frequency: `${mornings[i] || ''} - ${afternoons[i] || ''} - ${evenings[i] || ''}`
+        });
+      });
+
+      if (!medications.length) {
+        showMessage('messages', 'Veuillez ajouter au moins un médicament.', 'error');
+        return;
+      }
+
+      const data = {
+        patient_id,
+        prescription_date,
+        weight: weight || null,
+        medications,
+        instructions: instructions || null,
+        doctor_name: doctor.name_short
+      };
+
+      try {
+        if (editingId) {
+            await updatePrescription(editingId, data);
+            showMessage('messages', 'Prescription modifiée avec succès.', 'success');
+        } else {
+            // Allocate a unique sequential number for this prescription
+            const n = await nextPrescriptionNumber();
+            data.number = n;                                // store as integer
+            data.number_label = formatPrescriptionNumber(n); // e.g. "001"
+            await addPrescription(data);
+            showMessage('messages', 'Prescription créée avec succès.', 'success');
+        }
+        closePrescriptionModal();
+        loadPrescriptions();
+        } catch (err) {
+        console.error(err);
+        showMessage('messages', 'Erreur : ' + err.message, 'error');
+    }
+});
+  </script>
+</body>
+</html>

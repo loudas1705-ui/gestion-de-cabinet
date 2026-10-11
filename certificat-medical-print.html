@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificat Médical</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Georgia', 'Times New Roman', serif; background: #f0f0f0; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+
+    .certificate {
+      width: 148mm; height: 210mm; background: #fdfcfa;
+      padding: 12mm 12mm 10mm 12mm; position: relative;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); border-radius: 4px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .header { flex-shrink: 0; margin-bottom: 8px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .header-left { text-align: left; line-height: 1.3; }
+    .header-right { text-align: right; font-size: 11px; color: #2c3e50; font-style: italic; padding-top: 5px; }
+    .doctor-name { font-size: 15px; font-weight: 700; color: #2c3e50; letter-spacing: 0.5px; }
+    .doctor-title { font-size: 11px; color: #2c3e50; margin-top: 1px; font-style: italic; letter-spacing: 1px; }
+    .doctor-info-line { font-size: 9px; color: #2c3e50; margin-top: 1px; }
+    .header-separator { border-bottom: 1.5px solid #2c3e50; margin: 8px 0 0 0; }
+
+    .certificate-title { text-align: center; margin: 15px 0 20px 0; flex-shrink: 0; }
+    .certificate-title span {
+      font-size: 18px; font-weight: 700; color: #2c3e50; letter-spacing: 3px;
+      text-transform: uppercase; font-style: italic;
+      border-bottom: 1.5px solid #2c3e50; padding-bottom: 4px; display: inline-block;
+    }
+
+    .certificate-body { font-size: 12px; line-height: 1.9; color: #2c3e50; padding: 0 5px; font-style: italic; flex-shrink: 0; }
+    .certificate-body p { margin-bottom: 8px; }
+    .fill-line { display: inline-block; min-width: 180px; padding: 0 5px; font-style: normal; font-weight: 600; }
+    .fill-line.short { min-width: 80px; }
+    .fill-line.long { min-width: 220px; }
+
+    .content-block { margin: 15px 0 10px 0; padding: 0 8px; line-height: 1.9; text-align: justify; font-style: normal; font-size: 12px; color: #2c3e50; flex-shrink: 0; }
+    .content-block p { margin-bottom: 6px; }
+    .content-block em { font-style: italic; font-weight: 600; }
+
+    .spacer { flex-grow: 1; }
+    .bottom-line { flex-shrink: 0; padding-top: 10px; border-top: 1.5px solid #2c3e50; text-align: center; font-size: 11px; color: #2c3e50; font-weight: 700; font-style: italic; letter-spacing: 0.5px; }
+
+    /* ===== Toolbar ===== */
+    .toolbar {
+      position: fixed; top: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 1000;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .toolbar button {
+      color: white; border: none;
+      padding: 12px 20px; border-radius: 40px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+    .toolbar button:hover { transform: translateY(-2px); }
+    .btn-print  { background: #2c3e50; box-shadow: 0 4px 15px rgba(44,62,80,0.4); }
+    .btn-print:hover  { background: #1a252f; }
+    .btn-edit   { background: #059669; box-shadow: 0 4px 15px rgba(5,150,105,0.4); }
+    .btn-edit:hover   { background: #047857; }
+    .btn-back   { background: #6c757d; box-shadow: 0 4px 15px rgba(108,117,125,0.4); }
+    .btn-back:hover   { background: #5a6268; }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 1500;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 20px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: white; z-index: 1;
+      border-radius: 20px 20px 0 0;
+    }
+    .modal-header h3 { font-size: 18px; font-weight: 700; color: #1f2937; }
+    .modal-close {
+      background: none; border: none;
+      color: #9ca3af; font-size: 22px; cursor: pointer;
+      padding: 0 8px;
+    }
+    .modal-close:hover { color: #4b5563; }
+    .modal-body { padding: 24px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; }
+    .field label {
+      font-size: 12px; font-weight: 600;
+      color: #374151; margin-bottom: 6px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e7eb;
+      display: flex; justify-content: flex-end; gap: 10px;
+      position: sticky; bottom: 0; background: white;
+      border-radius: 0 0 20px 20px;
+    }
+    .modal-footer button {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600; font-size: 14px;
+      cursor: pointer; border: none;
+      transition: all 0.15s ease;
+    }
+    .btn-cancel { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .btn-cancel:hover { background: #e5e7eb; }
+    .btn-save   { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(102,126,234,0.35); }
+
+    @page { size: A5; margin: 0; }
+    @media print {
+      html, body { background: white; padding: 0; margin: 0; width: 148mm; height: 210mm; }
+      .toolbar, .modal-overlay { display: none !important; }
+      .certificate {
+        box-shadow: none; padding: 12mm 12mm 10mm 12mm; margin: 0;
+        width: 148mm; height: 210mm; border-radius: 0; background: white;
+        page-break-after: avoid; page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn-edit"  onclick="openEditModal()">✏️ Modifier</button>
+    <button class="btn-print" onclick="window.print()">🖨 Imprimer</button>
+    <button class="btn-back"  onclick="window.location.href='certificat-medical.html'">← Retour</button>
+  </div>
+
+  <div class="certificate" id="content">
+    <div class="text-center p-12">Chargement…</div>
+  </div>
+
+  <!-- ===== Edit modal ===== -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Modifier les informations</h3>
+        <button class="modal-close" onclick="closeEditModal()">✕</button>
+      </div>
+      <form class="modal-body" id="editForm">
+        <div class="form-grid">
+          <div class="field">
+            <label>Prénom</label>
+            <input type="text" id="ed_firstName">
+          </div>
+          <div class="field">
+            <label>Nom</label>
+            <input type="text" id="ed_lastName">
+          </div>
+          <div class="field">
+            <label>Âge</label>
+            <input type="number" id="ed_age" min="1" max="120">
+          </div>
+          <div class="field">
+            <label>Sexe</label>
+            <select id="ed_gender">
+              <option value="">Non précisé</option>
+              <option value="M">Masculin</option>
+              <option value="F">Féminin</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>NIN</label>
+            <input type="text" id="ed_nin">
+          </div>
+          <div class="field">
+            <label>NIN – délivré le</label>
+            <input type="date" id="ed_ninDeliveredOn">
+          </div>
+          <div class="field full">
+            <label>Adresse</label>
+            <input type="text" id="ed_address">
+          </div>
+          <div class="field full">
+            <label>Qui présente</label>
+            <textarea id="ed_motif" rows="4"></textarea>
+          </div>
+        </div>
+      </form>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeEditModal()">Annuler</button>
+        <button type="button" class="btn-save" onclick="saveEditModal()">Enregistrer les modifications</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { doctor } from './assets/js/doctor.js';
+    import { escapeHtml, formatDateFR } from './assets/js/helpers.js';
+
+    const STORAGE_KEY = 'certificate_data';
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { location.href = 'certificat-medical.html'; throw new Error('no data'); }
+    let data = JSON.parse(raw);
+
+    function render() {
+      const genderText = data.gender === 'M' ? 'Masculin' : data.gender === 'F' ? 'Féminin' : 'Non précisé';
+
+      const todayISO = new Date();
+      const todayStr = `${todayISO.getFullYear()}-${String(todayISO.getMonth()+1).padStart(2,'0')}-${String(todayISO.getDate()).padStart(2,'0')}`;
+      const issueDate = data.certificate_date || todayStr;
+
+      const ninBlock = data.nin
+        ? `<p>NIN : <span class="fill-line long">${escapeHtml(data.nin)}</span>${
+             data.nin_delivered_on
+               ? `&nbsp; Délivré le : <span class="fill-line short">${escapeHtml(formatDateFR(data.nin_delivered_on))}</span>`
+               : ''
+           }</p>`
+        : '';
+
+      document.getElementById('content').innerHTML = `
+        <div class="header">
+          <div class="header-top">
+            <div class="header-left">
+              <div class="doctor-name">${escapeHtml(doctor.name)}</div>
+              <div class="doctor-title">${escapeHtml(doctor.title)}</div>
+              <div class="doctor-info-line">${escapeHtml(doctor.address)}</div>
+              <div class="doctor-info-line">Tél : ${escapeHtml(doctor.phone)}</div>
+              <div class="doctor-info-line">Fix : ${escapeHtml(doctor.fix)}</div>
+              <div class="doctor-info-line">${escapeHtml(doctor.registry)}</div>
+            </div>
+            <div class="header-right">
+              <div>Annaba le : ${escapeHtml(formatDateFR(issueDate))}</div>
+            </div>
+          </div>
+          <div class="header-separator"></div>
+        </div>
+
+        <div class="certificate-title"><span>Certificat Médical</span></div>
+
+        <div class="certificate-body">
+          <p>Je Soussigné <span class="fill-line">${escapeHtml(doctor.name)}</span></p>
+          <p>Médecin <span class="fill-line long">${escapeHtml(doctor.title_short)}</span></p>
+          <p>Certifie avoir examiné ce jour <span class="fill-line long">${escapeHtml(data.last_name + ' ' + data.first_name)}</span></p>
+          <p>Âge <span class="fill-line short">${escapeHtml(data.age)} ans</span>
+             &nbsp;&nbsp; Sexe : <span class="fill-line short">${escapeHtml(genderText)}</span></p>
+          ${ninBlock}
+          ${data.address ? `<p>Adresse : <span class="fill-line long">${escapeHtml(data.address)}</span></p>` : ''}
+        </div>
+
+        <div class="content-block">
+          <p><em>Qui présente :</em></p>
+          ${data.motif ? `<p>${escapeHtml(data.motif).replace(/\n/g, '<br>')}</p>` : '<p style="color:#999;">&nbsp;</p><p style="color:#999;">&nbsp;</p><p style="color:#999;">&nbsp;</p>'}
+        </div>
+
+        <div class="spacer"></div>
+        <div class="bottom-line">Certificat fait pour faire valoir ce que de droit</div>
+      `;
+    }
+
+    render();
+
+    /* ---------- Modal ---------- */
+    const modal = document.getElementById('editModal');
+
+    window.openEditModal = function () {
+      document.getElementById('ed_firstName').value = data.first_name || '';
+      document.getElementById('ed_lastName').value  = data.last_name || '';
+      document.getElementById('ed_age').value       = data.age || '';
+      document.getElementById('ed_gender').value    = data.gender || '';
+      document.getElementById('ed_nin').value       = data.nin || '';
+      document.getElementById('ed_ninDeliveredOn').value = data.nin_delivered_on || '';
+      document.getElementById('ed_address').value   = data.address || '';
+      document.getElementById('ed_motif').value     = data.motif || '';
+      modal.classList.add('show');
+    };
+
+    window.closeEditModal = function () {
+      modal.classList.remove('show');
+    };
+
+    window.saveEditModal = function () {
+      data.first_name = document.getElementById('ed_firstName').value.trim();
+      data.last_name  = document.getElementById('ed_lastName').value.trim();
+      data.age        = document.getElementById('ed_age').value;
+      data.gender     = document.getElementById('ed_gender').value;
+      data.nin        = document.getElementById('ed_nin').value.trim();
+      data.nin_delivered_on = document.getElementById('ed_ninDeliveredOn').value;
+      data.address    = document.getElementById('ed_address').value.trim();
+      data.motif      = document.getElementById('ed_motif').value;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+      render();
+      closeEditModal();
+    };
+
+    modal.addEventListener('click', e => { if (e.target === modal) closeEditModal(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.classList.contains('show')) closeEditModal();
+    });
+  </script>
+</body>
+</html>
