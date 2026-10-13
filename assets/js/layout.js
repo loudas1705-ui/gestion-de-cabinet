@@ -20,8 +20,8 @@ export function renderLayout(currentPage) {
       <div class="flex flex-col h-full">
         <div class="p-6 border-b border-white/10">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-              <i class="fas fa-brain text-white text-xl"></i>
+            <div class="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-purple-500/25 flex items-center justify-center bg-white">
+              <img src="assets/img/logo.png" alt="Cabinet Psychiatrique" class="w-full h-full object-contain">
             </div>
             <div>
               <h1 class="text-xl font-bold text-white">Cabinet Psy</h1>
@@ -80,9 +80,10 @@ export function renderLayout(currentPage) {
               <p class="text-sm font-medium text-gray-700">${doctor.name_short}</p>
               <p class="text-xs text-gray-500">${doctor.title_short}</p>
             </div>
-            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
-              <i class="fas fa-user-md text-white"></i>
+            <div class="w-10 h-10 rounded-full overflow-hidden shadow-md bg-white flex items-center justify-center">
+              <img src="assets/img/logo.png" alt="" class="w-full h-full object-contain">
             </div>
+          </div>
           </div>
         </div>
       </div>
