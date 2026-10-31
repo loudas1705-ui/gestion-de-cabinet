@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observations — Cabinet Psychiatrique</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+  <div id="layout"></div>
+  <main class="ml-72 min-h-screen">
+    <div id="topbar"></div>
+    <div class="p-8">
+      <div id="messages" class="mb-4"></div>
+
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Observations</h1>
+          <p class="text-sm text-gray-500 mt-1">Consultez et recherchez l'historique des observations des patients.</p>
+        </div>
+        <button type="button" id="openObservationButton" class="btn-primary">
+          <i class="fas fa-plus-circle mr-2"></i> Ajouter une observation
+        </button>
+      </div>
+
+      <!-- Statistics -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="statsGrid">
+        <div class="stat-card animate-pulse h-28"></div>
+        <div class="stat-card animate-pulse h-28"></div>
+        <div class="stat-card animate-pulse h-28"></div>
+      </div>
+
+      <!-- Search and filters -->
+      <div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <div class="flex flex-col lg:flex-row items-stretch gap-3">
+          <div class="relative flex-1">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="searchInput"
+              placeholder="Rechercher un patient ou le contenu d'une observation..."
+              class="form-input pl-11 w-full">
+          </div>
+          <button type="button" id="searchBtn" class="btn-primary">
+            <i class="fas fa-search mr-1"></i> Rechercher
+          </button>
+          <button type="button" id="clearBtn" class="btn-secondary hidden">
+            <i class="fas fa-times mr-1"></i> Effacer
+          </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 mt-4">
+          <span class="text-sm text-gray-500 mr-1">Afficher :</span>
+          <button type="button" class="filter-btn active" data-filter="all">Toutes</button>
+          <button type="button" class="filter-btn" data-filter="recent">Récentes (7 jours)</button>
+          <button type="button" class="filter-btn" data-filter="today">Aujourd'hui</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+          <h2 class="font-bold text-gray-800 flex items-center">
+            <i class="fas fa-notes-medical mr-2 text-purple-600"></i>
+            Historique des observations
+            <span id="resultCount" class="ml-3 text-sm font-normal text-gray-500"></span>
+          </h2>
+        </div>
+        <div id="observationsList" class="divide-y divide-gray-100">
+          <div class="p-12 text-center text-gray-400">
+            <i class="fas fa-spinner fa-spin text-2xl"></i>
+            <p class="mt-2">Chargement des observations...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add observation modal -->
+  <div id="observationModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container" style="max-width:700px; max-height:95vh; overflow-y:auto;">
+      <div class="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+        <h3 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-eye text-green-600 mr-2"></i> Nouvelle observation
+        </h3>
+        <button type="button" id="closeModalX" class="text-gray-400 hover:text-gray-600" aria-label="Fermer">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <form id="observationForm" class="p-6 space-y-5">
+        <div>
+          <label for="observationPatientId" class="block text-sm font-medium text-gray-700 mb-2">Patient *</label>
+          <select id="observationPatientId" required class="form-select w-full">
+            <option value="">Sélectionner un patient</option>
+          </select>
+        </div>
+        <div>
+          <label for="observationText" class="block text-sm font-medium text-gray-700 mb-2">Observation *</label>
+          <textarea id="observationText" rows="6" required class="form-textarea w-full"
+            placeholder="Saisir l’observation concernant le patient…"></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+          <button type="button" id="cancelObservation" class="btn-secondary">Annuler</button>
+          <button type="submit" id="observationSubmitButton" class="btn-primary">
+            <i class="fas fa-save mr-2"></i> Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .filter-btn {
+      padding: 8px 14px; border: 1px solid #e5e7eb; border-radius: 10px;
+      color: #6b7280; font-size: 13px; font-weight: 600; background: white;
+      transition: all .2s;
+    }
+    .filter-btn:hover { background: #faf5ff; border-color: #d8b4fe; color: #7e22ce; }
+    .filter-btn.active { background: #7c3aed; border-color: #7c3aed; color: white; }
+    .observation-card { padding: 20px; transition: background .2s; }
+    .observation-card:hover { background: rgba(250,245,255,.55); }
+    .observation-content { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+
+  <script type="module">
+    import { requireAuth } from './assets/js/auth.js';
+    import { renderLayout } from './assets/js/layout.js';
+    import { listPatients, listObservations, addObservation } from './assets/js/db.js';
+    import { fullName, escapeHtml, showMessage, calcAge } from './assets/js/helpers.js';
+
+    let patientsCache = [];
+    let allObservations = [];
+    let search = '';
+    let activeFilter = 'all';
+
+    const $ = id => document.getElementById(id);
+
+    (async () => {
+      try {
+        await requireAuth();
+        renderLayout('observations.html');
+        await loadData();
+      } catch (error) {
+        console.error(error);
+        showMessage('messages', 'Impossible de charger la page : ' + error.message, 'error');
+      }
+    })();
+
+    async function loadData() {
+      try {
+        const [patients, observations] = await Promise.all([listPatients(), listObservations()]);
+        patientsCache = patients;
+        allObservations = observations;
+
+        $('observationPatientId').innerHTML =
+          '<option value="">Sélectionner un patient</option>' +
+          patientsCache.map(patient =>
+            `<option value="${escapeHtml(String(patient.id))}">${escapeHtml(fullName(patient))}</option>`
+          ).join('');
+
+        const patientId = new URLSearchParams(location.search).get('patient_id');
+        if (patientId) $('observationPatientId').value = patientId;
+
+        renderStats();
+        renderList();
+      } catch (error) {
+        console.error(error);
+        $('observationsList').innerHTML = `
+          <div class="p-10 text-center text-red-500">
+            <i class="fas fa-exclamation-circle text-3xl mb-3"></i>
+            <p>Impossible de charger les observations.</p>
+            <p class="text-sm mt-2">${escapeHtml(error.message)}</p>
+          </div>`;
+      }
+    }
+
+    function patientFor(observation) {
+      return patientsCache.find(p => String(p.id) === String(observation.patient_id));
+    }
+
+    function dateValue(value) {
+      if (!value) return null;
+      if (value.toDate) return value.toDate();
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatDate(value) {
+      const d = dateValue(value);
+      return d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Date non précisée';
+    }
+
+    function renderStats() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayCount = allObservations.filter(o => {
+        const d = dateValue(o.observation_date || o.created_at);
+        return d && d >= today && d < new Date(today.getTime() + 86400000);
+      }).length;
+      const patientCount = new Set(allObservations.map(o => o.patient_id).filter(Boolean)).size;
+
+      $('statsGrid').innerHTML = `
+        ${statCard('Total observations', allObservations.length, 'notes-medical', 'purple')}
+        ${statCard('Patients concernés', patientCount, 'users', 'blue')}
+        ${statCard("Aujourd'hui", todayCount, 'calendar-day', 'amber')}
+      `;
+    }
+
+    function statCard(label, value, icon, color) {
+      const colors = {
+        purple: 'from-purple-500 to-purple-600',
+        blue: 'from-blue-500 to-blue-600',
+        amber: 'from-amber-500 to-amber-600'
+      };
+      return `
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm font-medium">${escapeHtml(label)}</p>
+              <p class="text-3xl font-bold text-gray-800 mt-1">${value}</p>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br ${colors[color]} rounded-xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-${icon} text-white text-xl"></i>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderList() {
+      const term = search.toLowerCase();
+      const now = new Date();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      const weekAgo = new Date(todayStart);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      let filtered = allObservations.filter(o => {
+        const patient = patientFor(o);
+        const patientName = patient ? fullName(patient) : 'Patient inconnu';
+        const text = String(o.observation || '');
+        const matchesSearch = !term ||
+          patientName.toLowerCase().includes(term) ||
+          text.toLowerCase().includes(term);
+        const d = dateValue(o.observation_date || o.created_at);
+        const matchesFilter =
+          activeFilter === 'all' ||
+          (activeFilter === 'today' && d && d >= todayStart && d < new Date(todayStart.getTime() + 86400000)) ||
+          (activeFilter === 'recent' && d && d >= weekAgo && d <= now);
+        return matchesSearch && matchesFilter;
+      });
+
+      $('resultCount').textContent = `(${filtered.length} résultat${filtered.length > 1 ? 's' : ''})`;
+
+      if (!filtered.length) {
+        $('observationsList').innerHTML = `
+          <div class="p-12 text-center text-gray-400">
+            <i class="fas fa-notes-medical text-4xl mb-3 block"></i>
+            <p>${search || activeFilter !== 'all' ? 'Aucune observation ne correspond à votre recherche ou à ce filtre.' : 'Aucune observation enregistrée.'}</p>
+            <p class="text-sm mt-2">Utilisez le bouton « Ajouter une observation » pour commencer.</p>
+          </div>`;
+        return;
+      }
+
+      $('observationsList').innerHTML = filtered.map(o => {
+        const patient = patientFor(o);
+        const name = patient ? fullName(patient) : 'Patient inconnu';
+        const age = patient ? calcAge(patient.date_of_birth) : '';
+        const gender = patient?.gender === 'M' ? 'Masculin' : patient?.gender === 'F' ? 'Féminin' : '';
+        const phone = patient?.phone || '';
+        return `
+          <article class="observation-card">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                <i class="fas fa-user text-white"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <h3 class="font-bold text-gray-800 text-lg">${escapeHtml(name)}</h3>
+                    <p class="text-xs text-gray-500 mt-1">
+                      <i class="fas fa-calendar-alt mr-1"></i>${escapeHtml(formatDate(o.observation_date || o.created_at))}
+                      ${age !== '' ? `&nbsp; • &nbsp;<i class="fas fa-birthday-cake mr-1"></i>${escapeHtml(String(age))} ans` : ''}
+                      ${gender ? `&nbsp; • &nbsp;<i class="fas fa-venus-mars mr-1"></i>${escapeHtml(gender)}` : ''}
+                      ${phone ? `&nbsp; • &nbsp;<i class="fas fa-phone-alt mr-1"></i>${escapeHtml(phone)}` : ''}
+                    </p>
+                  </div>
+                  ${patient ? `<a href="patients.html" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50" title="Voir les patients"><i class="fas fa-user-edit"></i></a>` : ''}
+                </div>
+                <div class="mt-3 bg-purple-50 border-l-4 border-purple-500 rounded-r-lg p-4">
+                  <p class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2">
+                    <i class="fas fa-notes-medical mr-1"></i> Observation
+                  </p>
+                  <p class="text-sm text-gray-700 observation-content">${escapeHtml(o.observation || '')}</p>
+                </div>
+              </div>
+            </div>
+          </article>`;
+      }).join('');
+    }
+
+    function openObservationModal() {
+      $('observationForm').reset();
+      const patientId = new URLSearchParams(location.search).get('patient_id');
+      if (patientId) $('observationPatientId').value = patientId;
+      $('observationModal').style.display = 'flex';
+    }
+
+    function closeObservationModal() {
+      $('observationModal').style.display = 'none';
+    }
+
+    $('openObservationButton').addEventListener('click', openObservationModal);
+    $('closeModalX').addEventListener('click', closeObservationModal);
+    $('cancelObservation').addEventListener('click', closeObservationModal);
+
+    $('observationModal').addEventListener('click', event => {
+      if (event.target === $('observationModal')) closeObservationModal();
+    });
+
+    $('searchBtn').addEventListener('click', () => {
+      search = $('searchInput').value.trim();
+      $('clearBtn').classList.toggle('hidden', !search);
+      renderList();
+    });
+    $('searchInput').addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        $('searchBtn').click();
+      }
+    });
+    $('clearBtn').addEventListener('click', () => {
+      $('searchInput').value = '';
+      search = '';
+      $('clearBtn').classList.add('hidden');
+      renderList();
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        activeFilter = button.dataset.filter;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === button));
+        renderList();
+      });
+    });
+
+    $('observationForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const patient_id = $('observationPatientId').value;
+      const observation = $('observationText').value.trim();
+
+      if (!patient_id || !observation) {
+        showMessage('messages', 'Veuillez sélectionner un patient et saisir une observation.', 'error');
+        return;
+      }
+
+      const button = $('observationSubmitButton');
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement…';
+
+      try {
+        await addObservation({
+          patient_id,
+          observation,
+          observation_date: new Date().toISOString().slice(0, 10)
+        });
+        closeObservationModal();
+        showMessage('messages', 'Observation enregistrée avec succès.', 'success');
+        await loadData();
+      } catch (error) {
+        console.error(error);
+        showMessage('messages', 'Erreur lors de l’enregistrement : ' + error.message, 'error');
+      } finally {
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-save mr-2"></i> Enregistrer';
+      }
+    });
+  </script>
+</body>
+</html>
