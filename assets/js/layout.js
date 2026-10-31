@@ -8,7 +8,8 @@ const NAV = [
   { href: 'prescriptions.html',      icon: 'prescription-bottle', label: 'Prescriptions',    title: 'Gestion des prescriptions' },
   { href: 'arret-de-travail.html',   icon: 'file-medical-alt',    label: 'Arrêt de travail', title: 'Arrêt de travail' },
   { href: 'certificat-medical.html', icon: 'file-medical-alt',    label: 'Certificat Médical', title: 'Certificat Médical' },
-  { href: 'diagnostics.html',        icon: 'stethoscope',         label: 'Diagnostics',      title: 'Diagnostics' }
+  { href: 'diagnostics.html', icon: 'stethoscope', label: 'Diagnostics', title: 'Diagnostics' },
+  { href: 'observations.html', icon: 'eye', label: 'Observation', title: 'Gestion des observations' }
 ];
 
 export function renderLayout(currentPage) {
