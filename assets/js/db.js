@@ -221,3 +221,34 @@ export async function getUpcomingBirthdays(daysAhead = 7) {
       return (da.getMonth() - db2.getMonth()) || (da.getDate() - db2.getDate());
     });
 }
+
+/* ==================== OBSERVATIONS ==================== */
+
+/**
+ * Save a patient observation.
+ * No appointment link is required.
+ */
+export async function addObservation(data) {
+  return addDoc(collection(db, 'observations'), {
+    patient_id: data.patient_id,
+    observation: data.observation,
+    observation_date: data.observation_date,
+    created_at: serverTimestamp()
+  });
+}
+
+/* ==================== OBSERVATIONS LIST ==================== */
+
+export async function listObservations() {
+  const snap = await getDocs(
+    query(
+      collection(db, 'observations'),
+      orderBy('created_at', 'desc')
+    )
+  );
+
+  return snap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+}
