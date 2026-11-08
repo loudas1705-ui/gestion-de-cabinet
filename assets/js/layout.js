@@ -2,12 +2,13 @@ import { doctor } from './doctor.js';
 import { logout } from './auth.js';
 
 const NAV = [
-  { href: 'dashboard.html',              icon: 'chart-line',          label: 'Tableau de bord',  title: 'Tableau de bord' },
-  { href: 'patients.html',           icon: 'users',               label: 'Patients',         title: 'Gestion des patients' },
-  { href: 'appointments.html',       icon: 'calendar-alt',        label: 'Rendez-vous',      title: 'Gestion des rendez-vous' },
-  { href: 'prescriptions.html',      icon: 'prescription-bottle', label: 'Prescriptions',    title: 'Gestion des prescriptions' },
-  { href: 'arret-de-travail.html',   icon: 'file-medical-alt',    label: 'Arrêt de travail', title: 'Arrêt de travail' },
-  { href: 'certificat-medical.html', icon: 'file-medical-alt',    label: 'Certificat Médical', title: 'Certificat Médical' },
+  { href: 'dashboard.html', icon: 'chart-line', label: 'Tableau de bord', title: 'Tableau de bord' },
+  { href: 'patients.html', icon: 'users', label: 'Patients', title: 'Gestion des patients' },
+  { href: 'appointments.html', icon: 'calendar-alt', label: 'Rendez-vous', title: 'Gestion des rendez-vous' },
+  { href: 'prescriptions.html', icon: 'prescription-bottle', label: 'Prescriptions', title: 'Gestion des prescriptions' },
+  { href: 'bilans.html', icon: 'flask', label: 'Bilan biologique', title: 'Bilans biologiques' },
+  { href: 'arret-de-travail.html', icon: 'file-medical-alt', label: 'Arrêt de travail', title: 'Arrêt de travail' },
+  { href: 'certificat-medical.html', icon: 'file-medical-alt', label: 'Certificat Médical', title: 'Certificat Médical' },
   { href: 'diagnostics.html', icon: 'stethoscope', label: 'Diagnostics', title: 'Diagnostics' },
   { href: 'observations.html', icon: 'eye', label: 'Observation', title: 'Gestion des observations' }
 ];
@@ -30,7 +31,7 @@ export function renderLayout(currentPage) {
             </div>
           </div>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
           ${NAV.map(n => `
             <a href="${n.href}" class="nav-item ${n.href === currentPage ? 'active' : ''}">
               <i class="fas fa-${n.icon} w-5"></i>
@@ -47,24 +48,16 @@ export function renderLayout(currentPage) {
           </div>
         </div>
       </div>
-    </aside>
-  `;
+    </aside>`;
 
-  // Wire up the logout button (do NOT rely on inline onclick)
   const btn = document.getElementById('logoutBtn');
   if (btn) {
     btn.addEventListener('click', async () => {
-      try {
-        await logout();
-      } catch (err) {
-        console.error('Logout failed:', err);
-        // Fallback: force redirect to login anyway
-        location.href = 'index.html';
-      }
+      try { await logout(); }
+      catch (err) { console.error('Logout failed:', err); location.href = 'index.html'; }
     });
   }
 
-  // Topbar
   const topbar = document.getElementById('topbar');
   if (topbar) {
     const page = NAV.find(n => n.href === currentPage);
@@ -85,12 +78,9 @@ export function renderLayout(currentPage) {
               <img src="assets/img/logo.png" alt="" class="w-full h-full object-contain">
             </div>
           </div>
-          </div>
         </div>
-      </div>
-    `;
+      </div>`;
   }
 }
 
-// Keep a global fallback in case any page still uses onclick="logout()"
 window.logout = logout;
