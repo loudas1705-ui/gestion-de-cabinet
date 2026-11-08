@@ -1,6 +1,6 @@
-
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
 
   <!-- Searchable patient dropdown -->
@@ -107,6 +108,16 @@
           </select>
         </div>
 
+        <!-- National Identification Number -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Numéro d'Identification National (NIN)
+          </label>
+
+          <input type="text" id="prescriptionNIN" maxlength="18" inputmode="numeric" placeholder="Saisir le NIN"
+            class="form-input w-full">
+        </div>
+
         <!-- Prescription date and weight -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
@@ -115,12 +126,7 @@
               Date de prescription *
             </label>
 
-            <input
-              type="date"
-              id="prescriptionDate"
-              required
-              class="form-input w-full"
-            >
+            <input type="date" id="prescriptionDate" required class="form-input w-full">
           </div>
 
           <div>
@@ -128,12 +134,7 @@
               Poids (kg)
             </label>
 
-            <input
-              type="text"
-              id="prescriptionWeight"
-              placeholder="Ex: 70"
-              class="form-input w-full"
-            >
+            <input type="text" id="prescriptionWeight" placeholder="Ex: 70" class="form-input w-full">
           </div>
 
         </div>
@@ -150,11 +151,8 @@
 
           <div id="medicationsContainer" class="space-y-4"></div>
 
-          <button
-            type="button"
-            onclick="addMedicationRow()"
-            class="mt-4 text-purple-600 hover:text-purple-700 text-sm font-semibold"
-          >
+          <button type="button" onclick="addMedicationRow()"
+            class="mt-4 text-purple-600 hover:text-purple-700 text-sm font-semibold">
             <i class="fas fa-plus-circle mr-1"></i>
             Ajouter un médicament
           </button>
@@ -167,30 +165,18 @@
             Instructions complémentaires
           </label>
 
-          <textarea
-            id="prescriptionInstructions"
-            rows="4"
-            class="form-textarea w-full"
-            placeholder="Précautions, instructions complémentaires..."
-          ></textarea>
+          <textarea id="prescriptionInstructions" rows="4" class="form-textarea w-full"
+            placeholder="Précautions, instructions complémentaires..."></textarea>
         </div>
 
         <!-- Form actions -->
         <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
 
-          <button
-            type="button"
-            onclick="closePrescriptionModal()"
-            class="btn-secondary"
-          >
+          <button type="button" onclick="closePrescriptionModal()" class="btn-secondary">
             Annuler
           </button>
 
-          <button
-            type="submit"
-            id="prescriptionSubmitButton"
-            class="btn-primary"
-          >
+          <button type="submit" id="prescriptionSubmitButton" class="btn-primary">
             <i class="fas fa-save mr-2"></i>
             Enregistrer la prescription
           </button>
@@ -678,6 +664,9 @@
       document.getElementById('prescriptionWeight').value =
         p.weight || '';
 
+      document.getElementById('prescriptionNIN').value =
+        p.nin || '';
+
       document.getElementById('prescriptionInstructions').value =
         p.instructions || '';
 
@@ -754,6 +743,9 @@
 
       const weight =
         document.getElementById('prescriptionWeight').value.trim();
+
+      const nin =
+        document.getElementById('prescriptionNIN').value.trim();
 
       const instructions =
         document.getElementById('prescriptionInstructions').value.trim();
@@ -859,6 +851,8 @@
 
         prescription_date,
 
+        nin: nin || null,
+
         weight: weight || null,
 
         medications,
@@ -924,4 +918,5 @@
   </script>
 
 </body>
+
 </html>
