@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilans biologiques — Cabinet Psychiatrique</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+  <style>
+    body { font-family: Inter, sans-serif; }
+    .test-option { display:flex; align-items:flex-start; gap:.65rem; padding:.65rem .75rem; border:1px solid #e5e7eb; border-radius:.75rem; background:#fff; cursor:pointer; transition:.15s; }
+    .test-option:hover { border-color:#a78bfa; background:#faf8ff; }
+    .test-option input { margin-top:.2rem; accent-color:#7c3aed; width:16px; height:16px; flex-shrink:0; }
+    .selected-chip { display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .7rem; border:1px solid #ddd6fe; background:#f5f3ff; color:#5b21b6; border-radius:999px; font-size:.82rem; }
+    .selected-chip button { color:#7c3aed; }
+    .ts-control { border:1px solid #d1d5db !important; border-radius:.5rem !important; padding:.65rem .75rem !important; box-shadow:none !important; }
+    .ts-wrapper.focus .ts-control { border-color:#a78bfa !important; box-shadow:0 0 0 3px #ede9fe !important; }
+  </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+  <div id="layout"></div>
+  <main class="ml-72 min-h-screen">
+    <div id="topbar"></div>
+    <div class="p-8">
+      <div id="messages"></div>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-7">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <div>
+            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-flask text-purple-600 mr-2"></i>Nouveau bilan biologique</h3>
+            <p class="text-sm text-gray-500 mt-1">Sélectionnez un patient et les analyses à effectuer.</p>
+          </div>
+          <span class="text-xs text-gray-500 bg-gray-50 border rounded-lg px-3 py-2">Les analyses sont enregistrées séparément des prescriptions.</span>
+        </div>
+
+        <form id="bilanForm" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label for="patientId" class="block text-sm font-semibold text-gray-700 mb-2">Patient <span class="text-red-500">*</span></label>
+              <select id="patientId" required class="form-select w-full"><option value="">Sélectionner un patient</option></select>
+            </div>
+            <div>
+              <label for="bilanDate" class="block text-sm font-semibold text-gray-700 mb-2">Date du bilan <span class="text-red-500">*</span></label>
+              <input id="bilanDate" type="date" required class="form-input w-full">
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+              <div>
+                <h4 class="font-bold text-gray-800">Analyses standards</h4>
+                <p class="text-xs text-gray-500">Cochez uniquement les analyses souhaitées.</p>
+              </div>
+              <span id="standardCount" class="text-xs font-semibold text-purple-700 bg-purple-50 px-3 py-1.5 rounded-full">0 sélectionnée</span>
+            </div>
+            <div id="standardTests" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-5">
+            <h4 class="font-bold text-gray-800 mb-1">Autres analyses du catalogue</h4>
+            <p class="text-xs text-gray-500 mb-4">Recherchez une analyse dans le catalogue, puis ajoutez-la à la sélection.</p>
+            <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+              <div>
+                <input id="catalogSearch" type="text" list="catalogOptions" autocomplete="off" placeholder="Rechercher une analyse (ex. ACTH, Ferritine, D-dimères...)" class="form-input w-full">
+                <datalist id="catalogOptions"></datalist>
+              </div>
+              <button type="button" id="addCatalogTest" class="btn-secondary whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Ajouter l'analyse</button>
+            </div>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+              <input id="customTest" type="text" placeholder="Autre analyse non présente dans le catalogue" class="form-input w-full">
+              <button type="button" id="addCustomTest" class="btn-secondary whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Ajouter une analyse libre</button>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-5">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <h4 class="font-bold text-gray-800">Analyses sélectionnées</h4>
+                <p class="text-xs text-gray-500">Les doublons sont automatiquement évités.</p>
+              </div>
+              <span id="selectedCount" class="text-sm font-bold text-gray-700">0 analyse</span>
+            </div>
+            <div id="selectedTests" class="flex flex-wrap gap-2 min-h-12 p-3 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
+              <span class="text-sm text-gray-400">Aucune analyse sélectionnée.</span>
+            </div>
+          </div>
+          <div class="flex justify-end border-t border-gray-100 pt-5">
+            <button type="submit" id="saveBilan" class="btn-primary"><i class="fas fa-save mr-2"></i>Enregistrer et préparer l'impression</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-100">
+          <h3 class="font-bold text-gray-800"><i class="fas fa-clipboard-list text-purple-600 mr-2"></i>Bilans enregistrés</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table min-w-full">
+            <thead><tr><th>Patient</th><th>Date</th><th>Nombre d'analyses</th><th>Médecin</th><th>Actions</th></tr></thead>
+            <tbody id="bilansTableBody"><tr><td colspan="5" class="text-center py-8 text-gray-400">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './assets/js/auth.js';
+    import { renderLayout } from './assets/js/layout.js';
+    import { listPatients, addBilan, listBilans, deleteBilan } from './assets/js/db.js';
+    import { doctor } from './assets/js/doctor.js';
+    import { escapeHtml, escapeAttr, fullName, showMessage, formatDateFR } from './assets/js/helpers.js';
+
+    const STANDARD_TESTS = [
+      'TSH', 'T3 libre (FT3)', 'T4 libre (FT4 / T4L)', 'Cortisol',
+      'NFS (Numération-formule sanguine)', 'VS', 'CRP', 'Créatinine sanguine',
+      'DFG (Débit de filtration glomérulaire)', 'Glucose à jeun', 'Cholestérol total',
+      'Cholestérol HDL', 'Cholestérol LDL', 'Triglycérides', 'Transaminases (ASAT / ALAT)',
+      'Gamma-GT (GGT)', 'Phosphatases alcalines (PAL)', 'Ionogramme', 'Acide urique',
+      'Ferritine', 'Vitamine D', 'Vitamine B12', 'Calcium', 'Phosphore', 'HbA1c (Hémoglobine glyquée)',
+      'Bilirubine totale', 'Albumine', 'Urée', 'LDH'
+    ];
+
+    // Catalogue repris de la liste fournie. Les intitulés sont conservés pour faciliter la recherche.
+    const CATALOG = [
+      'ACE (antigène carcino-embryonnaire)', 'Acide lactique (lactate)', 'Acide valproïque (valproate de sodium / Depakine)',
+      'ACTH (hormone adrénocorticotrope)', 'Actitest', 'Activité anti-Xa', 'AFP (alpha-fœtoprotéine)', 'Alcool (éthanol)',
+      'Aldolase', 'Aldostérone plasmatique', 'Ammoniaque plasmatique (ammoniémie)', 'Amylase', 'Androstènedione (Δ4)',
+      'Anticoagulant circulant de type lupique', 'Anticorps anti-ADN natifs', 'Anticorps anti-ENA', 'Anticorps anti-CCP (ACPA)',
+      'Anticorps ANCA', 'Anticorps anti-facteur intrinsèque', 'Anticorps antinucléaires (AAN / ANA / FAN)',
+      'Anticorps antiphospholipides (aPL)', 'Anticorps anti-récepteur de la TSH (TRAK)', 'Anticorps anti-TPO',
+      'Anticorps antitransglutaminase (IgA)', 'Antithrombine (AT)', 'Bêta-2-microglobuline (β2M)', 'β-hCG (suivi de grossesse)',
+      'β-hCG (suivi de tumeur)', 'Bicarbonates (réserve alcaline)', 'Bilirubine (totale / directe / indirecte)', 'BNP',
+      'CA 125', 'CA 15-3', 'CA 19-9', 'Calcitonine', 'Carbamazépine (Tégrétol)', 'Carboxyhémoglobine (HbCO)', 'Caryotype',
+      'Chlore', 'CK / CPK', 'Coombs direct',
+     'CRP ultrasensible', 'Cryoglobuline', 'D-dimères',
+      'DHEA-S', 'Digoxine', 'EAL', 'EBV (charge virale / sérologie)', 'Électrophorèse des protéines sériques (EPS)', 'Estradiol',
+      'Facteur V', 'Facteur V Leiden', 'Facteur rhumatoïde', 'Facteur von Willebrand', 'Fer sérique / Transferrine',
+      'Fibrinogène', 'Fibrotest', 'Folates érythrocytaires', 'Folates sériques', 'FSH', 'G6PD', 'Gamma-glutamyl-transférase (GGT)',
+      'Gaz du sang', 'Gentamicine', 'Glucose postprandial', 'Groupe sanguin + phénotype Rhésus / Kell',
+      'Haptoglobine', 'Hémoculture', 'Hémoglobine', 'Hémoglobine (électrophorèse)',
+      'Sérologies / charges virales hépatites A, B et C', 'HLA B27', 'Immunofixation', 'Immunoglobulines A, D, E, G, M',
+      'IgE spécifiques / totales', 'INR', 'LH', 'Lipase', 'Lithium', 'Sérologie Lyme',
+      'Lymphocytes CD3 / CD4 / CD8 / CD19 / CD20', 'Myoglobine','NSE', 'NT-ProBNP', 'Nucléotidase 5′',
+      'Orosomucoïde', 'Paludisme', 'Paracétamol', 'PDF', 'Plaquettes', 'Potassium',
+      'Procalcitonine (PCT)', 'Progestérone / 17-OHP', 'Prolactine', 'Protéine C', 'Protéine C activée', 'Protéine S',
+      'PSA total / libre', 'PTH', 'RAI', 'Rénine', 'Réticulocytes', 'Rubéole', 'Sérotonine', 'Sodium', 'Syphilis',
+      'TCA (avec / sans héparine non fractionnée)', 'Testostérone totale',
+      'Thyroglobuline', 'Toxoplasmose', 'TP / INR', 'Transferrine',
+      'Trisomie 21', 'Troponines', 'VIH (sérologie / charge virale)'
+    ];
+
+    let patients = [];
+    let bilans = [];
+    let patientSelect = null;
+    let selectedTests = [];
+
+    const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const testKey = value => {
+      const key = normalize(value);
+      if (/^nfs\b/.test(key)) return 'nfs';
+      if (/^gamma glutamyl|^gamma gt/.test(key)) return 'ggt';
+      if (/^phosphatases alcalines|^pal$/.test(key)) return 'pal';
+      if (/^cholesterol ldl/.test(key)) return 'cholesterol ldl';
+      if (/^dfg\b/.test(key)) return 'dfg';
+      if (/^t4 libre/.test(key)) return 't4 libre';
+      if (/^t3 libre/.test(key)) return 't3 libre';
+      if (/^transaminases/.test(key)) return 'transaminases asat alat';
+      return key;
+    };
+    const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+
+    await requireAuth();
+    renderLayout('bilans.html');
+    document.getElementById('bilanDate').value = localToday();
+
+    function addTest(name) {
+      const clean = String(name || '').trim().replace(/\s+/g, ' ');
+      if (!clean) return false;
+      const key = testKey(clean);
+      if (selectedTests.some(t => testKey(t) === key)) {
+        showMessage('messages', 'Cette analyse est déjà dans la sélection.', 'error');
+        return false;
+      }
+      selectedTests.push(clean);
+      renderSelectedTests();
+      return true;
+    }
+
+    function renderStandardTests() {
+      const container = document.getElementById('standardTests');
+      container.innerHTML = STANDARD_TESTS.map((test, index) => `
+        <label class="test-option">
+          <input type="checkbox" data-standard-index="${index}">
+          <span class="text-sm text-gray-700">${escapeHtml(test)}</span>
+        </label>`).join('');
+      container.addEventListener('change', event => {
+        const input = event.target.closest('input[data-standard-index]');
+        if (!input) return;
+        const test = STANDARD_TESTS[Number(input.dataset.standardIndex)];
+        if (input.checked) {
+          const added = addTest(test);
+          if (!added) input.checked = false;
+        } else {
+          selectedTests = selectedTests.filter(t => testKey(t) !== testKey(test));
+          renderSelectedTests();
+        }
+        document.getElementById('standardCount').textContent = `${container.querySelectorAll('input:checked').length} sélectionnée(s)`;
+      });
+    }
+
+    function renderSelectedTests() {
+      const container = document.getElementById('selectedTests');
+      document.getElementById('selectedCount').textContent = `${selectedTests.length} analyse${selectedTests.length > 1 ? 's' : ''}`;
+      if (!selectedTests.length) {
+        container.innerHTML = '<span class="text-sm text-gray-400">Aucune analyse sélectionnée.</span>';
+        return;
+      }
+      container.innerHTML = selectedTests.map((test, index) => `
+        <span class="selected-chip">${escapeHtml(test)}
+          <button type="button" data-remove-test="${index}" aria-label="Retirer ${escapeAttr(test)}"><i class="fas fa-times"></i></button>
+        </span>`).join('');
+    }
+
+    document.getElementById('selectedTests').addEventListener('click', event => {
+      const button = event.target.closest('[data-remove-test]');
+      if (!button) return;
+      const index = Number(button.dataset.removeTest);
+      const removed = selectedTests[index];
+      selectedTests.splice(index, 1);
+      const standardIndex = STANDARD_TESTS.findIndex(t => testKey(t) === testKey(removed));
+      if (standardIndex >= 0) {
+        const checkbox = document.querySelector(`[data-standard-index="${standardIndex}"]`);
+        if (checkbox) checkbox.checked = false;
+      }
+      document.getElementById('standardCount').textContent = `${document.querySelectorAll('#standardTests input:checked').length} sélectionnée(s)`;
+      renderSelectedTests();
+    });
+
+    function addFromInput(inputId, clear = true) {
+      const input = document.getElementById(inputId);
+      const value = input.value.trim();
+      if (!value) {
+        showMessage('messages', 'Veuillez saisir ou choisir une analyse.', 'error');
+        return;
+      }
+      const match = CATALOG.find(item => normalize(item) === normalize(value));
+      if (addTest(match || value) && clear) input.value = '';
+    }
+
+    document.getElementById('addCatalogTest').addEventListener('click', () => addFromInput('catalogSearch'));
+    document.getElementById('catalogSearch').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFromInput('catalogSearch'); } });
+    document.getElementById('addCustomTest').addEventListener('click', () => addFromInput('customTest'));
+    document.getElementById('customTest').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFromInput('customTest'); } });
+
+    async function loadPatients() {
+      patients = await listPatients();
+      const select = document.getElementById('patientId');
+      select.innerHTML = '<option value="">Sélectionner un patient</option>' + patients.map(p => `<option value="${escapeAttr(p.id)}">${escapeHtml(fullName(p))}</option>`).join('');
+      patientSelect = new TomSelect(select, { placeholder: 'Rechercher un patient...', allowEmptyOption: true, create: false, maxOptions: null, searchField: ['text'], sortField: { field: 'text', direction: 'asc' } });
+      const patientId = new URLSearchParams(location.search).get('patient_id');
+      if (patientId && patients.some(p => p.id === patientId)) patientSelect.setValue(patientId, true);
+    }
+
+    function patientName(id) {
+      const p = patients.find(item => item.id === id);
+      return p ? fullName(p) : '—';
+    }
+
+    async function loadBilans() {
+      bilans = await listBilans();
+      renderBilans();
+    }
+
+    function renderBilans() {
+      const tbody = document.getElementById('bilansTableBody');
+      if (!bilans.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-gray-400"><i class="fas fa-flask text-3xl block mb-2"></i>Aucun bilan enregistré.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = bilans.map(b => `
+        <tr>
+          <td class="font-medium text-gray-800">${escapeHtml(patientName(b.patient_id))}</td>
+          <td>${escapeHtml(formatDateFR(b.bilan_date))}</td>
+          <td>${Array.isArray(b.tests) ? b.tests.length : 0}</td>
+          <td>${escapeHtml(b.doctor_name || doctor.name_short)}</td>
+          <td><div class="flex items-center gap-1">
+            <a href="bilan-print.html?id=${encodeURIComponent(b.id)}" class="text-green-600 hover:text-green-800 p-2" title="Imprimer"><i class="fas fa-print"></i></a>
+            <button type="button" data-delete-bilan="${escapeAttr(b.id)}" class="text-red-600 hover:text-red-800 p-2" title="Supprimer"><i class="fas fa-trash-alt"></i></button>
+          </div></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('bilansTableBody').addEventListener('click', async event => {
+      const button = event.target.closest('[data-delete-bilan]');
+      if (!button) return;
+      const id = button.dataset.deleteBilan;
+      if (!confirm('Supprimer définitivement ce bilan biologique ?')) return;
+      try {
+        await deleteBilan(id);
+        showMessage('messages', 'Bilan supprimé.', 'success');
+        await loadBilans();
+      } catch (error) {
+        console.error(error);
+        showMessage('messages', 'Erreur lors de la suppression : ' + error.message, 'error');
+      }
+    });
+
+    document.getElementById('bilanForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const patient_id = document.getElementById('patientId').value;
+      const bilan_date = document.getElementById('bilanDate').value;
+      if (!patient_id) return showMessage('messages', 'Veuillez sélectionner un patient.', 'error');
+      if (!bilan_date) return showMessage('messages', 'Veuillez sélectionner une date.', 'error');
+      if (!selectedTests.length) return showMessage('messages', 'Veuillez sélectionner au moins une analyse.', 'error');
+
+      const button = document.getElementById('saveBilan');
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+      try {
+        const uniqueTests = [...new Map(selectedTests.map(t => [testKey(t), t])).values()];
+        const result = await addBilan({ patient_id, bilan_date, tests: uniqueTests, doctor_name: doctor.name_short });
+        location.href = `bilan-print.html?id=${encodeURIComponent(result.id)}`;
+      } catch (error) {
+        console.error(error);
+        showMessage('messages', 'Erreur lors de l’enregistrement : ' + error.message, 'error');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-save mr-2"></i>Enregistrer et préparer l’impression';
+      }
+    });
+
+    renderStandardTests();
+    document.getElementById('catalogOptions').innerHTML = [...new Set(CATALOG)].sort((a,b) => a.localeCompare(b, 'fr')).map(item => `<option value="${escapeAttr(item)}"></option>`).join('');
+    renderSelectedTests();
+    try {
+      await Promise.all([loadPatients(), loadBilans()]);
+    } catch (error) {
+      console.error(error);
+      showMessage('messages', 'Impossible de charger les données : ' + error.message, 'error');
+    }
+  </script>
+</body>
+</html>
