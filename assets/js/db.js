@@ -252,3 +252,27 @@ export async function listObservations() {
     ...d.data()
   }));
 }
+/* ==================== BILANS BIOLOGIQUES ==================== */
+
+export async function listBilans() {
+  const snap = await getDocs(
+    query(collection(db, 'bilans'), orderBy('bilan_date', 'desc'))
+  );
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function getBilan(id) {
+  const snap = await getDoc(doc(db, 'bilans', id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+export async function addBilan(data) {
+  return addDoc(collection(db, 'bilans'), {
+    ...data,
+    created_at: serverTimestamp()
+  });
+}
+
+export async function deleteBilan(id) {
+  return deleteDoc(doc(db, 'bilans', id));
+}
