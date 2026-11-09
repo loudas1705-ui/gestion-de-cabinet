@@ -385,12 +385,13 @@
               <span class="fill-line short">${escapeHtml(age)} ans</span>
             </p>
 
-            ${p.nin ? `
-              <p>
-                NIN :
-                <span class="fill-line long">${escapeHtml(p.nin)}</span>
-              </p>
-            ` : ''}
+            <p>
+              NIN :
+              <span class="fill-line short">${escapeHtml(p.nin || '')}</span>
+
+              &nbsp;&nbsp; Délivré le :
+              <span class="fill-line short">${escapeHtml(p.nin_issue_date ? formatDateFR(p.nin_issue_date) : '')}</span>
+            </p>
             
             <p>Sexe : <span class="fill-line short">${escapeHtml(genderText)}</span>
               ${p.weight ? ` &nbsp; Poids : <span class="fill-line short">${escapeHtml(p.weight)} kg</span>` : ''}</p>
