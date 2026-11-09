@@ -109,13 +109,35 @@
         </div>
 
         <!-- National Identification Number -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Numéro d'Identification National (NIN)
-          </label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-          <input type="text" id="prescriptionNIN" maxlength="18" inputmode="numeric" placeholder="Saisir le NIN"
-            class="form-input w-full">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Numéro d'Identification National (NIN)
+            </label>
+
+            <input
+              type="text"
+              id="prescriptionNIN"
+              maxlength="18"
+              inputmode="numeric"
+              placeholder="Saisir le NIN"
+              class="form-input w-full"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Délivré le
+            </label>
+
+            <input
+              type="date"
+              id="prescriptionNINIssueDate"
+              class="form-input w-full"
+            >
+          </div>
+
         </div>
 
         <!-- Prescription date and weight -->
@@ -667,6 +689,9 @@
       document.getElementById('prescriptionNIN').value =
         p.nin || '';
 
+      document.getElementById('prescriptionNINIssueDate').value =
+        p.nin_issue_date ? formatDateInput(p.nin_issue_date) : '';
+
       document.getElementById('prescriptionInstructions').value =
         p.instructions || '';
 
@@ -746,6 +771,9 @@
 
       const nin =
         document.getElementById('prescriptionNIN').value.trim();
+
+      const nin_issue_date =
+        document.getElementById('prescriptionNINIssueDate').value;
 
       const instructions =
         document.getElementById('prescriptionInstructions').value.trim();
@@ -852,6 +880,8 @@
         prescription_date,
 
         nin: nin || null,
+
+        nin_issue_date: nin_issue_date || null,
 
         weight: weight || null,
 
